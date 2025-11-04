@@ -10,12 +10,12 @@
 
 ## 📌 Overview
 
-- **Bank Integration**: Connect accounts via Plaid API (mock implementation for MVP)
 - **Smart Dashboards**: Track spending, net worth, and budgets with interactive charts
 - **AI Simulations**: Run ML-powered financial predictions for various life scenarios
 - **Gamification**: Progress milestones, achievements, and financial literacy badges
 - **Security**: JWT authentication, role-based access, end-to-end encryption ready
 - **Scalable**: Dockerized, Kubernetes-ready, AWS deployment configurations
+- **Future Bank Integration**: V2 will connect accounts via Plaid API (mock implementation only for MVP)
 
 ## 🏗️ Architecture
 
