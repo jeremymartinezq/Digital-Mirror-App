@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: digital-mirror
+  labels:
+    name: digital-mirror
+    environment: production
+
