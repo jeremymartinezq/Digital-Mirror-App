@@ -16,11 +16,17 @@ import {
 } from '@heroicons/react/24/outline'
 import dynamic from 'next/dynamic'
 
-// Dynamically import recharts
-const LineChart = dynamic(() => import('recharts').then(mod => mod.LineChart), { ssr: false })
+// Dynamically import recharts components with loading fallback
+const LineChart = dynamic(() => import('recharts').then(mod => mod.LineChart), { 
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center h-[300px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div></div>
+})
 const Line = dynamic(() => import('recharts').then(mod => mod.Line), { ssr: false })
 const Area = dynamic(() => import('recharts').then(mod => mod.Area), { ssr: false })
-const AreaChart = dynamic(() => import('recharts').then(mod => mod.AreaChart), { ssr: false })
+const AreaChart = dynamic(() => import('recharts').then(mod => mod.AreaChart), { 
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center h-[300px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div></div>
+})
 const XAxis = dynamic(() => import('recharts').then(mod => mod.XAxis), { ssr: false })
 const YAxis = dynamic(() => import('recharts').then(mod => mod.YAxis), { ssr: false })
 const CartesianGrid = dynamic(() => import('recharts').then(mod => mod.CartesianGrid), { ssr: false })
@@ -31,6 +37,7 @@ const Legend = dynamic(() => import('recharts').then(mod => mod.Legend), { ssr: 
 export default function Dashboard() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
+  const [mounted, setMounted] = useState(false)
   const [netWorth, setNetWorth] = useState<any>(null)
   const [spendingData, setSpendingData] = useState<any>(null)
   const [transactions, setTransactions] = useState<any[]>([])
@@ -63,6 +70,7 @@ export default function Dashboard() {
   }, [])
 
   useEffect(() => {
+    setMounted(true)
     const token = localStorage.getItem('token')
     if (!token) {
       router.push('/login')
@@ -145,28 +153,34 @@ export default function Dashboard() {
           {/* Net Worth Trend */}
           <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6">
             <h2 className="text-xl font-bold text-white mb-4">Net Worth Trend</h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={netWorthTrendData}>
-                <defs>
-                  <linearGradient id="colorNetWorth" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis dataKey="month" stroke="#9ca3af" />
-                <YAxis stroke="#9ca3af" tickFormatter={(value) => `$${(value/1000).toFixed(0)}k`} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#1e293b',
-                    border: '1px solid #475569',
-                    borderRadius: '8px',
-                  }}
-                  formatter={(value: any) => [`$${value.toLocaleString()}`, '']}
-                />
-                <Area type="monotone" dataKey="netWorth" stroke="#3b82f6" fillOpacity={1} fill="url(#colorNetWorth)" />
-              </AreaChart>
-            </ResponsiveContainer>
+            {mounted ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <AreaChart data={netWorthTrendData}>
+                  <defs>
+                    <linearGradient id="colorNetWorth" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="month" stroke="#9ca3af" />
+                  <YAxis stroke="#9ca3af" tickFormatter={(value) => `$${(value/1000).toFixed(0)}k`} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#1e293b',
+                      border: '1px solid #475569',
+                      borderRadius: '8px',
+                    }}
+                    formatter={(value: any) => [`$${value.toLocaleString()}`, '']}
+                  />
+                  <Area type="monotone" dataKey="netWorth" stroke="#3b82f6" fillOpacity={1} fill="url(#colorNetWorth)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-[300px]">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+              </div>
+            )}
             <p className="text-sm text-gray-400 mt-2">
               📈 Up 6.2% this year • ${((netWorthTrendData[netWorthTrendData.length-1].netWorth - netWorthTrendData[0].netWorth)/1000).toFixed(1)}k growth
             </p>
@@ -175,25 +189,31 @@ export default function Dashboard() {
           {/* Savings Progress & Projection */}
           <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6">
             <h2 className="text-xl font-bold text-white mb-4">Emergency Fund Progress</h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={savingsProjectionData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis dataKey="month" stroke="#9ca3af" label={{ value: 'Months', position: 'insideBottom', offset: -5, fill: '#9ca3af' }} />
-                <YAxis stroke="#9ca3af" tickFormatter={(value) => `$${(value/1000).toFixed(0)}k`} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#1e293b',
-                    border: '1px solid #475569',
-                    borderRadius: '8px',
-                  }}
-                  formatter={(value: any) => value ? [`$${value.toLocaleString()}`, ''] : []}
-                />
-                <Legend />
-                <Line type="monotone" dataKey="actual" stroke="#10b981" strokeWidth={3} name="Actual" dot={false} />
-                <Line type="monotone" dataKey="projected" stroke="#3b82f6" strokeWidth={2} strokeDasharray="5 5" name="Projected" dot={false} />
-                <Line type="monotone" dataKey="target" stroke="#ef4444" strokeWidth={1} strokeDasharray="3 3" name="Target" dot={false} />
-              </LineChart>
-            </ResponsiveContainer>
+            {mounted ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={savingsProjectionData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="month" stroke="#9ca3af" label={{ value: 'Months', position: 'insideBottom', offset: -5, fill: '#9ca3af' }} />
+                  <YAxis stroke="#9ca3af" tickFormatter={(value) => `$${(value/1000).toFixed(0)}k`} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#1e293b',
+                      border: '1px solid #475569',
+                      borderRadius: '8px',
+                    }}
+                    formatter={(value: any) => value ? [`$${value.toLocaleString()}`, ''] : []}
+                  />
+                  <Legend />
+                  <Line type="monotone" dataKey="actual" stroke="#10b981" strokeWidth={3} name="Actual" dot={false} />
+                  <Line type="monotone" dataKey="projected" stroke="#3b82f6" strokeWidth={2} strokeDasharray="5 5" name="Projected" dot={false} />
+                  <Line type="monotone" dataKey="target" stroke="#ef4444" strokeWidth={1} strokeDasharray="3 3" name="Target" dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-[300px]">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+              </div>
+            )}
             <p className="text-sm text-gray-400 mt-2">
               🎯 56% complete • $6,500 to go • Est. 13 months at current rate
             </p>
