@@ -96,6 +96,21 @@ class ApiService {
     return response.data
   }
 
+  async createAccount(accountData: {
+    account_name: string
+    account_type: string
+    balance: number
+    institution?: string
+  }) {
+    const response = await this.client.post('/api/accounts/', accountData)
+    return response.data
+  }
+
+  async deleteAccount(accountId: number) {
+    const response = await this.client.delete(`/api/accounts/${accountId}`)
+    return response.data
+  }
+
   // Transaction endpoints
   async getTransactions(params?: {
     account_id?: number

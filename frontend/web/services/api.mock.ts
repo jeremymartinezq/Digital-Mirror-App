@@ -493,6 +493,33 @@ class MockApiService {
     }
   }
 
+  async createAccount(accountData: any) {
+    await this.delay()
+    const newAccount = {
+      id: Math.max(...mockAccounts.map(a => a.id), 0) + 1,
+      user_id: 1,
+      account_name: accountData.account_name,
+      institution_name: accountData.institution || 'Unknown',
+      account_type: accountData.account_type,
+      balance: accountData.balance || 0,
+      currency: 'USD',
+      last_synced: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+    }
+    mockAccounts.push(newAccount)
+    return newAccount
+  }
+
+  async deleteAccount(accountId: number) {
+    await this.delay()
+    const index = mockAccounts.findIndex(acc => acc.id === accountId)
+    if (index !== -1) {
+      mockAccounts.splice(index, 1)
+      return { success: true, message: 'Account deleted successfully' }
+    }
+    throw new Error('Account not found')
+  }
+
   // Transaction endpoints
   async getTransactions(params?: any) {
     await this.delay()
