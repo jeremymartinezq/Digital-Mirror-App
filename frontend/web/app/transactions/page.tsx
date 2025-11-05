@@ -13,6 +13,7 @@ import {
   CalendarIcon,
   ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 
 export default function TransactionsPage() {
   const router = useRouter()
@@ -23,6 +24,7 @@ export default function TransactionsPage() {
   const [filterType, setFilterType] = useState('all')
   const [filterCategory, setFilterCategory] = useState('all')
   const [timeFilter, setTimeFilter] = useState('30')
+  const [mounted, setMounted] = useState(false)
   const [newTransaction, setNewTransaction] = useState({
     account_id: '',
     amount: 0,
@@ -31,6 +33,10 @@ export default function TransactionsPage() {
     description: '',
     date: new Date().toISOString().split('T')[0],
   })
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -94,11 +100,11 @@ export default function TransactionsPage() {
 
   const totalIncome = filteredTransactions
     .filter((t) => t.transaction_type === 'income')
-    .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0)
+    .reduce((sum, t) => sum + Math.abs(parseFloat(t.amount || 0)), 0)
 
   const totalExpenses = filteredTransactions
     .filter((t) => t.transaction_type === 'expense')
-    .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0)
+    .reduce((sum, t) => sum + Math.abs(parseFloat(t.amount || 0)), 0)
 
   const categories = [
     'food', 'transportation', 'utilities', 'entertainment',
@@ -110,8 +116,17 @@ export default function TransactionsPage() {
     category: cat,
     amount: filteredTransactions
       .filter(t => t.category === cat && t.transaction_type === 'expense')
-      .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0)
+      .reduce((sum, t) => sum + Math.abs(parseFloat(t.amount || 0)), 0)
   })).filter(c => c.amount > 0).sort((a, b) => b.amount - a.amount)
+
+  // Debug log
+  useEffect(() => {
+    if (mounted && !loading) {
+      console.log('Category Breakdown Data:', categoryBreakdown)
+      console.log('Total Expenses:', totalExpenses)
+      console.log('Filtered Transactions:', filteredTransactions.length)
+    }
+  }, [mounted, loading, categoryBreakdown, totalExpenses, filteredTransactions.length])
 
   // Monthly comparison
   const thisMonthExpenses = transactions
@@ -120,7 +135,7 @@ export default function TransactionsPage() {
       const now = new Date()
       return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear() && t.transaction_type === 'expense'
     })
-    .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0)
+    .reduce((sum, t) => sum + Math.abs(parseFloat(t.amount || 0)), 0)
 
   const lastMonthExpenses = transactions
     .filter(t => {
@@ -129,7 +144,7 @@ export default function TransactionsPage() {
       const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
       return date.getMonth() === lastMonth.getMonth() && date.getFullYear() === lastMonth.getFullYear() && t.transaction_type === 'expense'
     })
-    .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0)
+    .reduce((sum, t) => sum + Math.abs(parseFloat(t.amount || 0)), 0)
 
   const monthlyChange = lastMonthExpenses > 0 ? ((thisMonthExpenses - lastMonthExpenses) / lastMonthExpenses) * 100 : 0
 
@@ -222,26 +237,53 @@ export default function TransactionsPage() {
           {/* Category Breakdown */}
           <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6">
             <h2 className="text-xl font-bold text-white mb-4">Spending by Category</h2>
-            <div className="space-y-4">
-              {categoryBreakdown.slice(0, 5).map((item) => {
-                const percentage = (item.amount / totalExpenses) * 100
-                return (
-                  <div key={item.category}>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-gray-300 capitalize">{item.category}</span>
-                      <span className="text-white font-semibold">${item.amount.toLocaleString()}</span>
-                    </div>
-                    <div className="w-full bg-slate-700 rounded-full h-2">
-                      <div
-                        className="h-2 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500"
-                        style={{ width: `${percentage}%` }}
-                      />
-                    </div>
-                    <p className="text-gray-500 text-xs mt-1">{percentage.toFixed(1)}% of expenses</p>
-                  </div>
-                )
-              })}
-            </div>
+            {!mounted ? (
+              <div className="flex items-center justify-center h-[300px]">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+              </div>
+            ) : categoryBreakdown.length === 0 ? (
+              <div className="flex items-center justify-center h-[300px]">
+                <p className="text-gray-400">No expense data available for the selected period</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart 
+                  data={categoryBreakdown.slice(0, 8)}
+                  margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                  <XAxis 
+                    dataKey="category" 
+                    stroke="#94a3b8"
+                    tick={{ fill: '#94a3b8', fontSize: 11 }}
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                  />
+                  <YAxis 
+                    stroke="#94a3b8"
+                    tick={{ fill: '#94a3b8', fontSize: 12 }}
+                    tickFormatter={(value) => `$${value.toLocaleString()}`}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#1e293b',
+                      border: '1px solid #334155',
+                      borderRadius: '8px',
+                      color: '#f1f5f9'
+                    }}
+                    formatter={(value: any) => [`$${value.toLocaleString()}`, 'Amount']}
+                    labelFormatter={(label) => `Category: ${label}`}
+                    labelStyle={{ color: '#f1f5f9', textTransform: 'capitalize' }}
+                  />
+                  <Bar dataKey="amount" radius={[8, 8, 0, 0]}>
+                    {categoryBreakdown.slice(0, 8).map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={`hsl(${index * 45}, 70%, 60%)`} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
 
           {/* Budget Tracker */}
@@ -251,7 +293,7 @@ export default function TransactionsPage() {
               {Object.entries(budgets).map(([category, budget]: [string, any]) => {
                 const spent = filteredTransactions
                   .filter(t => t.category === category && t.transaction_type === 'expense')
-                  .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0)
+                  .reduce((sum, t) => sum + Math.abs(parseFloat(t.amount || 0)), 0)
                 const percentage = (spent / budget) * 100
                 const isOverBudget = percentage > 100
                 
