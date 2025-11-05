@@ -1,10 +1,20 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { api } from '@/services/api'
 import DashboardLayout from '@/components/DashboardLayout'
 import { SparklesIcon, PlusIcon } from '@heroicons/react/24/outline'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+import dynamic from 'next/dynamic'
+
+// Dynamically import recharts to reduce initial bundle size
+const LineChart = dynamic(() => import('recharts').then(mod => mod.LineChart), { ssr: false })
+const Line = dynamic(() => import('recharts').then(mod => mod.Line), { ssr: false })
+const XAxis = dynamic(() => import('recharts').then(mod => mod.XAxis), { ssr: false })
+const YAxis = dynamic(() => import('recharts').then(mod => mod.YAxis), { ssr: false })
+const CartesianGrid = dynamic(() => import('recharts').then(mod => mod.CartesianGrid), { ssr: false })
+const Tooltip = dynamic(() => import('recharts').then(mod => mod.Tooltip), { ssr: false })
+const ResponsiveContainer = dynamic(() => import('recharts').then(mod => mod.ResponsiveContainer), { ssr: false })
+const Legend = dynamic(() => import('recharts').then(mod => mod.Legend), { ssr: false })
 
 export default function Simulations() {
   const [simulations, setSimulations] = useState<any[]>([])
@@ -13,6 +23,9 @@ export default function Simulations() {
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [simulationParams, setSimulationParams] = useState<any>({})
+  
+  // Memoize demo data to prevent regeneration on every render
+  const demoData = useMemo(() => generateDemoData(), [])
 
   useEffect(() => {
     loadData()
@@ -21,35 +34,73 @@ export default function Simulations() {
   const loadData = async () => {
     // Always set demo templates first for immediate display
     const demoTemplates = [
+      // Real-life scenario questions
+      {
+        type: 'month_off_freelancing',
+        name: 'Month Off Freelancing',
+        description: '💼 What happens if I take a month off freelancing?',
+        icon: '🏖️'
+      },
+      {
+        type: 'extra_debt_payment',
+        name: 'Extra Debt Payment',
+        description: '💰 What if I pay $300 extra on my debt this month?',
+        icon: '💳'
+      },
+      {
+        type: 'client_leaves',
+        name: 'Client Leaves',
+        description: '👋 What if one of my clients leaves?',
+        icon: '📉'
+      },
+      {
+        type: 'buy_equipment',
+        name: 'Buy New Equipment',
+        description: '🖥️ What if I buy new equipment?',
+        icon: '🛒'
+      },
+      {
+        type: 'rate_increase',
+        name: 'Rate Increase',
+        description: '📈 What if I increase my rate by 10%?',
+        icon: '💵'
+      },
+      // Traditional simulations
       {
         type: 'savings_goal',
         name: 'Savings Goal',
-        description: 'Calculate how long it will take to reach your savings goal'
+        description: 'Calculate how long it will take to reach your savings goal',
+        icon: '🎯'
       },
       {
         type: 'retirement',
         name: 'Retirement Planning',
-        description: 'Project your retirement savings and income needs'
+        description: 'Project your retirement savings and income needs',
+        icon: '🏖️'
       },
       {
         type: 'debt_payoff',
         name: 'Debt Payoff',
-        description: 'Compare strategies to pay off your debts faster'
+        description: 'Compare strategies to pay off your debts faster',
+        icon: '💳'
       },
       {
         type: 'investment_growth',
         name: 'Investment Growth',
-        description: 'Simulate long-term investment returns with regular contributions'
+        description: 'Simulate long-term investment returns with regular contributions',
+        icon: '📊'
       },
       {
         type: 'emergency_fund',
         name: 'Emergency Fund',
-        description: 'Calculate how much you need for 3-6 months of expenses'
+        description: 'Calculate how much you need for 3-6 months of expenses',
+        icon: '🆘'
       },
       {
         type: 'home_affordability',
         name: 'Home Affordability',
-        description: 'Determine how much house you can afford'
+        description: 'Determine how much house you can afford',
+        icon: '🏠'
       }
     ]
     
@@ -191,10 +242,19 @@ export default function Simulations() {
                     setSelectedTemplate(template)
                     setSimulationParams({})
                   }}
-                  className="text-left p-4 bg-slate-900/50 hover:bg-slate-900/70 border border-slate-700 hover:border-blue-500 rounded-lg transition"
+                  className="text-left p-4 bg-slate-900/50 hover:bg-slate-900/70 border border-slate-700 hover:border-blue-500 rounded-lg transition group"
                 >
-                  <h3 className="font-semibold text-white mb-2">{template.name}</h3>
-                  <p className="text-sm text-gray-400">{template.description}</p>
+                  <div className="flex items-start gap-3">
+                    {template.icon && (
+                      <span className="text-3xl group-hover:scale-110 transition-transform">
+                        {template.icon}
+                      </span>
+                    )}
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-white mb-2">{template.name}</h3>
+                      <p className="text-sm text-gray-400">{template.description}</p>
+                    </div>
+                  </div>
                 </button>
               ))}
             </div>
@@ -288,7 +348,7 @@ export default function Simulations() {
           </p>
           
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={generateDemoData()}>
+            <LineChart data={demoData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
               <XAxis dataKey="month" stroke="#9ca3af" />
               <YAxis stroke="#9ca3af" />
@@ -496,6 +556,38 @@ function ResultItem({ label, value, highlight }: { label: string; value: string 
 
 function SimulationForm({ template, params, setParams, onRun, onCancel }: any) {
   const fields: any = {
+    // New scenario-based simulations
+    month_off_freelancing: [
+      { key: 'current_monthly_income', label: 'Current Monthly Income ($)', type: 'number', default: 5000 },
+      { key: 'monthly_expenses', label: 'Monthly Expenses ($)', type: 'number', default: 3500 },
+      { key: 'current_savings', label: 'Current Savings ($)', type: 'number', default: 8000 },
+      { key: 'months_off', label: 'Months Off', type: 'number', default: 1 },
+    ],
+    extra_debt_payment: [
+      { key: 'current_debt', label: 'Current Debt Balance ($)', type: 'number', default: 5000 },
+      { key: 'interest_rate', label: 'Interest Rate (%)', type: 'number', default: 18 },
+      { key: 'minimum_payment', label: 'Minimum Payment ($)', type: 'number', default: 150 },
+      { key: 'extra_payment', label: 'Extra Payment This Month ($)', type: 'number', default: 300 },
+    ],
+    client_leaves: [
+      { key: 'total_monthly_income', label: 'Total Monthly Income ($)', type: 'number', default: 6000 },
+      { key: 'client_income_loss', label: 'Income from Lost Client ($)', type: 'number', default: 2000 },
+      { key: 'monthly_expenses', label: 'Monthly Expenses ($)', type: 'number', default: 4000 },
+      { key: 'emergency_fund', label: 'Emergency Fund ($)', type: 'number', default: 10000 },
+    ],
+    buy_equipment: [
+      { key: 'equipment_cost', label: 'Equipment Cost ($)', type: 'number', default: 2500 },
+      { key: 'current_savings', label: 'Current Savings ($)', type: 'number', default: 5000 },
+      { key: 'monthly_income', label: 'Monthly Income ($)', type: 'number', default: 5000 },
+      { key: 'expected_income_increase', label: 'Expected Monthly Income Increase ($)', type: 'number', default: 500 },
+    ],
+    rate_increase: [
+      { key: 'current_hourly_rate', label: 'Current Hourly Rate ($)', type: 'number', default: 50 },
+      { key: 'hours_per_month', label: 'Billable Hours Per Month', type: 'number', default: 100 },
+      { key: 'rate_increase_percent', label: 'Rate Increase (%)', type: 'number', default: 10 },
+      { key: 'monthly_expenses', label: 'Monthly Expenses ($)', type: 'number', default: 3500 },
+    ],
+    // Traditional simulations
     savings_goal: [
       { key: 'goal_amount', label: 'Goal Amount ($)', type: 'number', default: 50000 },
       { key: 'current_savings', label: 'Current Savings ($)', type: 'number', default: 5000 },
@@ -589,32 +681,226 @@ function generateSimulationResults(type: string, params: any) {
   }
 
   console.log(`Calculating ${type} with params:`, params)
+  
+  // Constants for advanced calculations
+  const INFLATION_RATE = 0.03  // 3% annual inflation
+  const TAX_RATE = 0.15  // 15% capital gains tax
 
   switch (type) {
+    // NEW SCENARIO-BASED SIMULATIONS
+    case 'month_off_freelancing':
+      const monthOffBalance = params.current_savings
+      const monthsOffCount = params.months_off || 1
+      const lostIncome = params.current_monthly_income * monthsOffCount
+      const expensesDuringBreak = params.monthly_expenses * monthsOffCount
+      const newBalance = monthOffBalance - expensesDuringBreak
+      const monthsToRecover = newBalance > 0 ? Math.ceil(lostIncome / (params.current_monthly_income - params.monthly_expenses)) : 0
+      
+      return {
+        summary: {
+          months_off: monthsOffCount,
+          current_savings: monthOffBalance,
+          lost_income: lostIncome,
+          expenses_during_break: expensesDuringBreak,
+          balance_after_break: Math.round(newBalance),
+          months_to_recover: monthsToRecover,
+          emergency_fund_status: newBalance > (params.monthly_expenses * 3) ? 'Safe' : 'At Risk',
+          recommendation: newBalance < 0 ? '⚠️ Warning: You cannot afford this break without going into debt' : 
+                          newBalance < params.monthly_expenses * 3 ? '⚠️ Caution: This will deplete your emergency fund' : 
+                          '✅ You can afford this break!'
+        },
+        impact: {
+          immediate: `You'll spend $${expensesDuringBreak.toFixed(0)} from savings`,
+          recovery: monthsToRecover > 0 ? `It will take ${monthsToRecover} months to recover the lost income` : 'No recovery needed',
+          risk_level: newBalance < 0 ? 'High' : newBalance < params.monthly_expenses * 3 ? 'Medium' : 'Low'
+        }
+      }
+    
+    case 'extra_debt_payment':
+      const totalPayment = params.minimum_payment + params.extra_payment
+      const extraDebtMonthlyRate = (params.interest_rate / 100) / 12
+      
+      // Calculate payoff with minimum payment only
+      let minDebtBalance = params.current_debt
+      let minMonths = 0
+      let minTotalInterest = 0
+      while (minDebtBalance > 0 && minMonths < 360) {
+        const interest = minDebtBalance * extraDebtMonthlyRate
+        const principal = Math.min(params.minimum_payment - interest, minDebtBalance)
+        minDebtBalance -= principal
+        minTotalInterest += interest
+        minMonths++
+      }
+      
+      // Calculate payoff with extra payment
+      let extraDebtBalance = params.current_debt
+      let extraMonths = 0
+      let extraTotalInterest = 0
+      while (extraDebtBalance > 0 && extraMonths < 360) {
+        const interest = extraDebtBalance * extraDebtMonthlyRate
+        const principal = Math.min(totalPayment - interest, extraDebtBalance)
+        extraDebtBalance -= principal
+        extraTotalInterest += interest
+        extraMonths++
+      }
+      
+      return {
+        summary: {
+          current_debt: params.current_debt,
+          extra_payment: params.extra_payment,
+          months_saved: minMonths - extraMonths,
+          interest_saved: Math.round(minTotalInterest - extraTotalInterest),
+          new_payoff_months: extraMonths,
+          total_savings: Math.round((minTotalInterest - extraTotalInterest) + (params.extra_payment * (minMonths - extraMonths))),
+          recommendation: `✅ By paying $${params.extra_payment} extra, you'll be debt-free ${minMonths - extraMonths} months sooner!`
+        },
+        comparison: {
+          minimum_only: {
+            months: minMonths,
+            total_interest: Math.round(minTotalInterest),
+            total_paid: Math.round(params.current_debt + minTotalInterest)
+          },
+          with_extra: {
+            months: extraMonths,
+            total_interest: Math.round(extraTotalInterest),
+            total_paid: Math.round(params.current_debt + extraTotalInterest)
+          }
+        }
+      }
+    
+    case 'client_leaves':
+      const newMonthlyIncome = params.total_monthly_income - params.client_income_loss
+      const netIncome = newMonthlyIncome - params.monthly_expenses
+      const burnRate = params.monthly_expenses - newMonthlyIncome
+      const monthsUntilBroke = burnRate > 0 ? Math.floor(params.emergency_fund / burnRate) : Infinity
+      
+      return {
+        summary: {
+          income_loss: params.client_income_loss,
+          new_monthly_income: newMonthlyIncome,
+          monthly_expenses: params.monthly_expenses,
+          net_monthly: netIncome,
+          emergency_fund: params.emergency_fund,
+          months_of_runway: monthsUntilBroke === Infinity ? 'Sustainable' : monthsUntilBroke,
+          status: netIncome >= 0 ? 'Sustainable' : 'Burning Cash',
+          recommendation: netIncome >= 0 ? 
+            `✅ You can still cover expenses, but with reduced savings ($${netIncome}/month)` :
+            monthsUntilBroke > 6 ? 
+              `⚠️ You have ${monthsUntilBroke} months of runway. Start finding new clients!` :
+              `🚨 Critical: Only ${monthsUntilBroke} months of runway. Find new clients immediately!`
+        },
+        action_plan: {
+          immediate: burnRate > 0 ? 'Reduce expenses or find new clients immediately' : 'Start looking for additional clients to rebuild savings',
+          short_term: `Target ${Math.ceil(params.client_income_loss / 500)} new clients at $500/month each`,
+          long_term: 'Diversify client base to reduce dependency on single clients'
+        }
+      }
+    
+    case 'buy_equipment':
+      const remainingAfterPurchase = params.current_savings - params.equipment_cost
+      const monthsToBreakEven = params.expected_income_increase > 0 ? 
+        Math.ceil(params.equipment_cost / params.expected_income_increase) : Infinity
+      const oneYearGain = (params.expected_income_increase * 12) - params.equipment_cost
+      
+      return {
+        summary: {
+          equipment_cost: params.equipment_cost,
+          current_savings: params.current_savings,
+          remaining_savings: remainingAfterPurchase,
+          expected_income_increase: params.expected_income_increase,
+          months_to_breakeven: monthsToBreakEven === Infinity ? 'Never (no income increase)' : monthsToBreakEven,
+          one_year_roi: Math.round((oneYearGain / params.equipment_cost) * 100),
+          recommendation: remainingAfterPurchase < 0 ? 
+            '🚨 You cannot afford this purchase without going into debt' :
+            remainingAfterPurchase < params.monthly_income ?
+              `⚠️ This will leave you with only $${remainingAfterPurchase} in savings` :
+              monthsToBreakEven <= 12 ? 
+                `✅ Great investment! You'll break even in ${monthsToBreakEven} months` :
+                `⚠️ Long payback period: ${monthsToBreakEven} months to break even`
+        },
+        projection: {
+          immediate: `Spend $${params.equipment_cost}, have $${remainingAfterPurchase} left`,
+          six_months: `Earn extra $${params.expected_income_increase * 6}, net ${(params.expected_income_increase * 6) - params.equipment_cost}`,
+          one_year: `Earn extra $${params.expected_income_increase * 12}, net $${oneYearGain}`,
+          roi_1year: `${Math.round((oneYearGain / params.equipment_cost) * 100)}% return in first year`
+        }
+      }
+    
+    case 'rate_increase':
+      const currentMonthlyRevenue = params.current_hourly_rate * params.hours_per_month
+      const newHourlyRate = params.current_hourly_rate * (1 + params.rate_increase_percent / 100)
+      const newMonthlyRevenue = newHourlyRate * params.hours_per_month
+      const monthlyIncrease = newMonthlyRevenue - currentMonthlyRevenue
+      const annualIncrease = monthlyIncrease * 12
+      const newMonthlySavings = newMonthlyRevenue - params.monthly_expenses
+      const savingsIncrease = monthlyIncrease
+      
+      return {
+        summary: {
+          current_rate: params.current_hourly_rate,
+          new_rate: Math.round(newHourlyRate * 100) / 100,
+          rate_increase_amount: Math.round((newHourlyRate - params.current_hourly_rate) * 100) / 100,
+          monthly_income_increase: Math.round(monthlyIncrease),
+          annual_income_increase: Math.round(annualIncrease),
+          new_monthly_savings: Math.round(newMonthlySavings),
+          savings_increase_percent: currentMonthlyRevenue > 0 ? 
+            Math.round((savingsIncrease / (currentMonthlyRevenue - params.monthly_expenses)) * 100) : 0,
+          recommendation: `✅ This ${params.rate_increase_percent}% rate increase adds $${Math.round(annualIncrease)} per year!`
+        },
+        impact: {
+          per_hour: `+$${Math.round((newHourlyRate - params.current_hourly_rate) * 100) / 100}/hour`,
+          per_month: `+$${Math.round(monthlyIncrease)}/month`,
+          per_year: `+$${Math.round(annualIncrease)}/year`,
+          five_year: `+$${Math.round(annualIncrease * 5)} over 5 years`,
+          savings_boost: `${Math.round((savingsIncrease / (currentMonthlyRevenue - params.monthly_expenses)) * 100)}% increase in monthly savings`
+        },
+        considerations: [
+          params.rate_increase_percent > 15 ? '⚠️ Large increase - communicate value clearly to clients' : '✅ Reasonable increase',
+          params.rate_increase_percent > 20 ? '⚠️ Risk of losing price-sensitive clients' : '✅ Low risk of client loss',
+          `💡 Consider offering existing clients ${params.rate_increase_percent / 2}% increase with grandfather period`,
+          `💡 Frame as "new rate effective [date]" rather than "rate increase"`
+        ]
+      }
+    
     case 'savings_goal':
-      // Formula: Calculate months needed to reach savings goal with compound interest
-      // FV = PV(1+r)^n + PMT * [(1+r)^n - 1] / r
-      // Solving for n (months)
+      // Advanced Formula: Calculate months with compound interest
+      // Future Value = PV(1+r)^n + PMT * [((1+r)^n - 1) / r]
       const monthlyRate = (params.annual_return / 100) / 12
       let months = 0
+      let actualFinalAmount = params.goal_amount
       
-      // Simple calculation if no interest
+      // Use precise compound interest formula
       if (monthlyRate === 0) {
         months = (params.goal_amount - params.current_savings) / params.monthly_contribution
       } else {
-        const numerator = params.goal_amount * monthlyRate + params.monthly_contribution
-        const denominator = params.current_savings * monthlyRate + params.monthly_contribution
-        if (denominator > 0 && numerator > 0) {
-          months = Math.log(numerator / denominator) / Math.log(1 + monthlyRate)
-        } else {
-          months = (params.goal_amount - params.current_savings) / params.monthly_contribution
+        // Newton-Raphson method for more accurate calculation
+        let n = 120  // Initial guess: 10 years
+        for (let i = 0; i < 10; i++) {
+          const fv = params.current_savings * Math.pow(1 + monthlyRate, n) + 
+                     params.monthly_contribution * ((Math.pow(1 + monthlyRate, n) - 1) / monthlyRate)
+          const dfv = params.current_savings * Math.log(1 + monthlyRate) * Math.pow(1 + monthlyRate, n) +
+                      params.monthly_contribution * Math.log(1 + monthlyRate) * 
+                      (Math.pow(1 + monthlyRate, n) - 1) / monthlyRate
+          n = n - (fv - params.goal_amount) / dfv
+          if (Math.abs(fv - params.goal_amount) < 1) break
         }
+        months = Math.max(0, n)
+        
+        // Calculate actual final amount with interest earned
+        actualFinalAmount = params.current_savings * Math.pow(1 + monthlyRate, months) + 
+                           params.monthly_contribution * ((Math.pow(1 + monthlyRate, months) - 1) / monthlyRate)
       }
       
       // Ensure months is valid
       if (!isFinite(months) || months < 0) {
         months = (params.goal_amount - params.current_savings) / params.monthly_contribution
+        actualFinalAmount = params.goal_amount
       }
+      
+      const savingsTotalContributed = params.current_savings + (params.monthly_contribution * Math.ceil(months))
+      const savingsInterestEarned = actualFinalAmount - savingsTotalContributed
+      const savingsRealValue = actualFinalAmount / Math.pow(1 + INFLATION_RATE, months / 12)
+      const savingsAfterTaxValue = savingsTotalContributed + (savingsInterestEarned * (1 - TAX_RATE))
       
       return {
         summary: {
@@ -623,46 +909,150 @@ function generateSimulationResults(type: string, params: any) {
           monthly_contribution: params.monthly_contribution,
           months_to_goal: Math.ceil(months),
           years_to_goal: (months / 12).toFixed(1),
-          total_contributed: params.current_savings + (params.monthly_contribution * Math.ceil(months)),
-          final_amount: params.goal_amount
+          total_contributed: Math.round(savingsTotalContributed),
+          final_amount: Math.round(actualFinalAmount),
+          interest_earned: Math.round(savingsInterestEarned),
+          real_value: Math.round(savingsRealValue),
+          after_tax_value: Math.round(savingsAfterTaxValue),
+          effective_return: savingsInterestEarned > 0 ? ((savingsInterestEarned / savingsTotalContributed) * 100).toFixed(2) : 0
+        },
+        timeline: generateTimelineSavings(params, Math.ceil(months), monthlyRate),
+        confidence: {
+          conservative: Math.round(actualFinalAmount * 0.85),
+          expected: Math.round(actualFinalAmount),
+          optimistic: Math.round(actualFinalAmount * 1.15)
         }
       }
 
+// Helper function for savings timeline (optimized - only every 3 months)
+function generateTimelineSavings(params: any, months: number, monthlyRate: number) {
+  const timeline = []
+  let balance = params.current_savings
+  const maxDataPoints = 40 // Limit to 40 data points for performance
+  const step = Math.max(1, Math.ceil(months / maxDataPoints))
+  
+  for (let i = 0; i <= Math.min(months, 120); i += step) {
+    // Calculate balance for this specific month
+    balance = params.current_savings * Math.pow(1 + monthlyRate, i) + 
+              params.monthly_contribution * ((Math.pow(1 + monthlyRate, i) - 1) / monthlyRate)
+    
+    timeline.push({
+      month: i,
+      balance: Math.round(balance),
+      contributed: params.current_savings + (params.monthly_contribution * i)
+    })
+  }
+  
+  // Always include the final month
+  if (timeline[timeline.length - 1].month !== months) {
+    balance = params.current_savings * Math.pow(1 + monthlyRate, months) + 
+              params.monthly_contribution * ((Math.pow(1 + monthlyRate, months) - 1) / monthlyRate)
+    timeline.push({
+      month: Math.round(months),
+      balance: Math.round(balance),
+      contributed: params.current_savings + (params.monthly_contribution * months)
+    })
+  }
+  
+  return timeline
+}
+
     case 'retirement':
-      // Formula: Compound interest with regular contributions over time
-      // FV = PV(1+r)^n + PMT * [(1+r)^n - 1] / r
+      // Advanced retirement planning with Monte Carlo-style scenarios
       const years = params.retirement_age - params.current_age
       const retMonthlyRate = (params.annual_return / 100) / 12
       const totalMonths = years * 12
+      const volatility = 0.15  // 15% annual volatility
+      
+      // Expected case (deterministic)
       let retBalance = params.current_savings
       for (let i = 0; i < totalMonths; i++) {
         retBalance = retBalance * (1 + retMonthlyRate) + params.monthly_contribution
       }
+      
+      const retTotalContributed = params.current_savings + (params.monthly_contribution * totalMonths)
+      const retInvestmentGains = retBalance - retTotalContributed
+      
+      // Scenario analysis
+      const conservativeRate = (params.annual_return - volatility * 100) / 100 / 12
+      const optimisticRate = (params.annual_return + volatility * 100) / 100 / 12
+      
+      let conservativeBalance = params.current_savings
+      let optimisticBalance = params.current_savings
+      
+      for (let i = 0; i < totalMonths; i++) {
+        conservativeBalance = conservativeBalance * (1 + conservativeRate) + params.monthly_contribution
+        optimisticBalance = optimisticBalance * (1 + optimisticRate) + params.monthly_contribution
+      }
+      
+      // Inflation-adjusted values
+      const retRealValue = retBalance / Math.pow(1 + INFLATION_RATE, years)
+      const retAfterTaxGains = retInvestmentGains * (1 - TAX_RATE)
+      const retAfterTaxBalance = retTotalContributed + retAfterTaxGains
+      
+      // Calculate safe withdrawal rate (4% rule)
+      const safeWithdrawalAnnual = retBalance * 0.04
+      const safeWithdrawalMonthly = safeWithdrawalAnnual / 12
+      
       return {
         summary: {
           current_age: params.current_age,
           retirement_age: params.retirement_age,
           years_until_retirement: years,
           projected_balance: Math.round(retBalance),
-          total_contributed: params.current_savings + (params.monthly_contribution * totalMonths),
-          investment_gains: Math.round(retBalance - params.current_savings - (params.monthly_contribution * totalMonths))
-        }
+          real_value: Math.round(retRealValue),
+          after_tax_balance: Math.round(retAfterTaxBalance),
+          total_contributed: Math.round(retTotalContributed),
+          investment_gains: Math.round(retInvestmentGains),
+          after_tax_gains: Math.round(retAfterTaxGains),
+          safe_withdrawal_monthly: Math.round(safeWithdrawalMonthly),
+          safe_withdrawal_annual: Math.round(safeWithdrawalAnnual),
+          replacement_ratio: params.monthly_contribution > 0 ? 
+            ((safeWithdrawalMonthly / (params.monthly_contribution * 3)) * 100).toFixed(0) : 0
+        },
+        scenarios: {
+          conservative: Math.round(conservativeBalance),
+          expected: Math.round(retBalance),
+          optimistic: Math.round(optimisticBalance)
+        },
+        timeline: generateRetirementTimeline(params, totalMonths, retMonthlyRate)
       }
+
+// Helper function for retirement timeline (optimized - annual snapshots with direct calculation)
+function generateRetirementTimeline(params: any, months: number, monthlyRate: number) {
+  const timeline = []
+  const maxYears = Math.min(Math.ceil(months / 12), 30) // Limit to 30 years
+  
+  for (let year = 0; year <= maxYears; year++) {
+    const m = year * 12
+    // Direct calculation instead of iterating
+    const balance = params.current_savings * Math.pow(1 + monthlyRate, m) + 
+                   params.monthly_contribution * ((Math.pow(1 + monthlyRate, m) - 1) / monthlyRate)
+    
+    timeline.push({
+      year: year,
+      age: params.current_age + year,
+      balance: Math.round(balance),
+      contributed: params.current_savings + (params.monthly_contribution * m)
+    })
+  }
+  return timeline
+}
 
     case 'debt_payoff':
       // Formula: Loan amortization - months to pay off debt
       // n = -log(1 - r*P/A) / log(1+r)
       // where P = principal, A = payment, r = monthly interest rate
-      const monthlyInterestRate = (params.interest_rate / 100) / 12
+      const debtPayoffMonthlyRate = (params.interest_rate / 100) / 12
       let payoffMonths = 0
       
-      if (monthlyInterestRate === 0) {
+      if (debtPayoffMonthlyRate === 0) {
         // No interest
         payoffMonths = params.total_debt / params.monthly_payment
       } else {
-        const denominator = params.monthly_payment - params.total_debt * monthlyInterestRate
+        const denominator = params.monthly_payment - params.total_debt * debtPayoffMonthlyRate
         if (denominator > 0) {
-          payoffMonths = Math.log(params.monthly_payment / denominator) / Math.log(1 + monthlyInterestRate)
+          payoffMonths = Math.log(params.monthly_payment / denominator) / Math.log(1 + debtPayoffMonthlyRate)
         } else {
           // Payment is too low, simple calculation
           payoffMonths = params.total_debt / params.monthly_payment
@@ -689,14 +1079,41 @@ function generateSimulationResults(type: string, params: any) {
     case 'investment_growth':
       const invMonthlyRate = (params.annual_return / 100) / 12
       const invMonths = params.years * 12
+      const invVolatility = 0.15  // 15% volatility
       let invBalance = params.initial_investment || 0
       
-      // Compound interest with monthly contributions
+      // Expected case - Compound interest with monthly contributions
       for (let i = 0; i < invMonths; i++) {
         invBalance = (invBalance * (1 + invMonthlyRate)) + (params.monthly_contribution || 0)
       }
       
-      const totalContributed = (params.initial_investment || 0) + ((params.monthly_contribution || 0) * invMonths)
+      const invTotalContributed = (params.initial_investment || 0) + ((params.monthly_contribution || 0) * invMonths)
+      const invEarnings = invBalance - invTotalContributed
+      
+      // Scenario analysis
+      const invConservativeRate = ((params.annual_return - invVolatility * 100) / 100) / 12
+      const invOptimisticRate = ((params.annual_return + invVolatility * 100) / 100) / 12
+      
+      let invConservative = params.initial_investment || 0
+      let invOptimistic = params.initial_investment || 0
+      
+      for (let i = 0; i < invMonths; i++) {
+        invConservative = (invConservative * (1 + invConservativeRate)) + (params.monthly_contribution || 0)
+        invOptimistic = (invOptimistic * (1 + invOptimisticRate)) + (params.monthly_contribution || 0)
+      }
+      
+      // Tax and inflation adjustments
+      const invRealValue = invBalance / Math.pow(1 + INFLATION_RATE, params.years)
+      const invAfterTaxEarnings = invEarnings * (1 - TAX_RATE)
+      const invAfterTaxValue = invTotalContributed + invAfterTaxEarnings
+      
+      // Calculate Sharpe ratio approximation
+      const excessReturn = (params.annual_return / 100) - 0.04  // Assuming 4% risk-free rate
+      const sharpeRatio = excessReturn / invVolatility
+      
+      // Calculate CAGR (Compound Annual Growth Rate)
+      const cagr = invTotalContributed > 0 ? 
+        (Math.pow(invBalance / invTotalContributed, 1 / params.years) - 1) * 100 : 0
       
       return {
         summary: {
@@ -705,10 +1122,75 @@ function generateSimulationResults(type: string, params: any) {
           years: params.years || 0,
           expected_return: params.annual_return || 0,
           final_balance: Math.round(invBalance),
-          total_contributed: Math.round(totalContributed),
-          total_earnings: Math.round(invBalance - totalContributed)
-        }
+          real_value: Math.round(invRealValue),
+          after_tax_value: Math.round(invAfterTaxValue),
+          total_contributed: Math.round(invTotalContributed),
+          total_earnings: Math.round(invEarnings),
+          after_tax_earnings: Math.round(invAfterTaxEarnings),
+          cagr: cagr.toFixed(2),
+          sharpe_ratio: sharpeRatio.toFixed(2),
+          roi_percentage: invTotalContributed > 0 ? 
+            ((invEarnings / invTotalContributed) * 100).toFixed(1) : 0
+        },
+        scenarios: {
+          pessimistic: {
+            value: Math.round(invConservative),
+            return: ((invConservative / invTotalContributed - 1) * 100).toFixed(1)
+          },
+          expected: {
+            value: Math.round(invBalance),
+            return: ((invBalance / invTotalContributed - 1) * 100).toFixed(1)
+          },
+          optimistic: {
+            value: Math.round(invOptimistic),
+            return: ((invOptimistic / invTotalContributed - 1) * 100).toFixed(1)
+          }
+        },
+        risk_analysis: {
+          volatility: (invVolatility * 100).toFixed(1) + '%',
+          sharpe_ratio: sharpeRatio.toFixed(2),
+          risk_rating: sharpeRatio > 1 ? 'Excellent' : sharpeRatio > 0.5 ? 'Good' : 'Fair'
+        },
+        timeline: generateInvestmentTimeline(params, invMonths, invMonthlyRate)
       }
+
+// Helper function for investment timeline (optimized - quarterly snapshots)
+function generateInvestmentTimeline(params: any, months: number, monthlyRate: number) {
+  const timeline = []
+  const initial = params.initial_investment || 0
+  const monthly = params.monthly_contribution || 0
+  const maxDataPoints = 40
+  const step = Math.max(1, Math.ceil(months / maxDataPoints))
+  
+  for (let i = 0; i <= Math.min(months, 360); i += step) {
+    // Direct calculation
+    const balance = initial * Math.pow(1 + monthlyRate, i) + 
+                   monthly * ((Math.pow(1 + monthlyRate, i) - 1) / monthlyRate)
+    const contributed = initial + (monthly * i)
+    
+    timeline.push({
+      month: i,
+      balance: Math.round(balance),
+      contributed: Math.round(contributed),
+      earnings: Math.round(balance - contributed)
+    })
+  }
+  
+  // Always include final month
+  if (timeline[timeline.length - 1].month !== months) {
+    const balance = initial * Math.pow(1 + monthlyRate, months) + 
+                   monthly * ((Math.pow(1 + monthlyRate, months) - 1) / monthlyRate)
+    const contributed = initial + (monthly * months)
+    timeline.push({
+      month: months,
+      balance: Math.round(balance),
+      contributed: Math.round(contributed),
+      earnings: Math.round(balance - contributed)
+    })
+  }
+  
+  return timeline
+}
 
     case 'emergency_fund':
       const targetAmount = params.monthly_expenses * params.target_months
