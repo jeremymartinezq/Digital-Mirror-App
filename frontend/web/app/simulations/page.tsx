@@ -4,17 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import { api } from '@/services/api'
 import DashboardLayout from '@/components/DashboardLayout'
 import { SparklesIcon, PlusIcon } from '@heroicons/react/24/outline'
-import dynamic from 'next/dynamic'
-
-// Dynamically import recharts to reduce initial bundle size
-const LineChart = dynamic(() => import('recharts').then(mod => mod.LineChart), { ssr: false })
-const Line = dynamic(() => import('recharts').then(mod => mod.Line), { ssr: false })
-const XAxis = dynamic(() => import('recharts').then(mod => mod.XAxis), { ssr: false })
-const YAxis = dynamic(() => import('recharts').then(mod => mod.YAxis), { ssr: false })
-const CartesianGrid = dynamic(() => import('recharts').then(mod => mod.CartesianGrid), { ssr: false })
-const Tooltip = dynamic(() => import('recharts').then(mod => mod.Tooltip), { ssr: false })
-const ResponsiveContainer = dynamic(() => import('recharts').then(mod => mod.ResponsiveContainer), { ssr: false })
-const Legend = dynamic(() => import('recharts').then(mod => mod.Legend), { ssr: false })
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 
 export default function Simulations() {
   const [simulations, setSimulations] = useState<any[]>([])
@@ -22,12 +12,14 @@ export default function Simulations() {
   const [showNewSimulation, setShowNewSimulation] = useState(false)
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [mounted, setMounted] = useState(false)
   const [simulationParams, setSimulationParams] = useState<any>({})
   
   // Memoize demo data to prevent regeneration on every render
   const demoData = useMemo(() => generateDemoData(), [])
 
   useEffect(() => {
+    setMounted(true)
     loadData()
   }, [])
 
@@ -347,23 +339,29 @@ export default function Simulations() {
             Simulating $10,000 initial investment with $500 monthly contributions at 7% annual return
           </p>
           
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={demoData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-              <XAxis dataKey="month" stroke="#9ca3af" />
-              <YAxis stroke="#9ca3af" />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: '#1e293b',
-                  border: '1px solid #475569',
-                  borderRadius: '8px',
-                }}
-              />
-              <Legend />
-              <Line type="monotone" dataKey="balance" stroke="#3b82f6" name="Portfolio Value" strokeWidth={2} />
-              <Line type="monotone" dataKey="contributed" stroke="#10b981" name="Total Contributed" strokeWidth={2} />
-            </LineChart>
-          </ResponsiveContainer>
+          {mounted ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={demoData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <XAxis dataKey="month" stroke="#9ca3af" />
+                <YAxis stroke="#9ca3af" />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#1e293b',
+                    border: '1px solid #475569',
+                    borderRadius: '8px',
+                  }}
+                />
+                <Legend />
+                <Line type="monotone" dataKey="balance" stroke="#3b82f6" name="Portfolio Value" strokeWidth={2} />
+                <Line type="monotone" dataKey="contributed" stroke="#10b981" name="Total Contributed" strokeWidth={2} />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex items-center justify-center h-[300px]">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+            </div>
+          )}
 
           <div className="mt-6 grid grid-cols-3 gap-4">
             <div className="text-center p-4 bg-slate-900/50 rounded-lg">
@@ -505,6 +503,114 @@ function SimulationCard({ simulation }: { simulation: any }) {
             <ResultItem label="Loan Amount" value={formatCurrency(summary.loan_amount)} />
             <ResultItem label="Monthly Payment" value={formatCurrency(summary.monthly_payment)} highlight />
             <ResultItem label="Total Interest" value={formatCurrency(summary.total_interest)} />
+          </div>
+        )
+
+      case 'month_off_freelancing':
+        return (
+          <div className="space-y-4">
+            <div className="p-4 bg-gradient-to-r from-orange-900/30 to-red-900/30 border border-orange-700/50 rounded-lg">
+              <p className="text-xs text-gray-400 mb-1">Balance After Break</p>
+              <p className="text-3xl font-bold text-orange-400">{formatCurrency(summary.balance_after_break)}</p>
+              <p className="text-sm text-gray-400 mt-2">
+                {summary.recommendation}
+              </p>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <ResultItem label="Months Off" value={`${summary.months_off} month(s)`} />
+              <ResultItem label="Current Savings" value={formatCurrency(summary.current_savings)} />
+              <ResultItem label="Lost Income" value={formatCurrency(summary.lost_income)} highlight />
+              <ResultItem label="Expenses During Break" value={formatCurrency(summary.expenses_during_break)} />
+              <ResultItem label="Months to Recover" value={`${summary.months_to_recover} months`} highlight />
+              <ResultItem label="Emergency Fund Status" value={summary.emergency_fund_status} />
+            </div>
+          </div>
+        )
+
+      case 'extra_debt_payment':
+        return (
+          <div className="space-y-4">
+            <div className="p-4 bg-gradient-to-r from-green-900/30 to-emerald-900/30 border border-green-700/50 rounded-lg">
+              <p className="text-xs text-gray-400 mb-1">Interest Saved</p>
+              <p className="text-3xl font-bold text-green-400">{formatCurrency(summary.interest_saved)}</p>
+              <p className="text-sm text-gray-400 mt-2">
+                {summary.recommendation}
+              </p>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <ResultItem label="Current Debt" value={formatCurrency(summary.current_debt)} />
+              <ResultItem label="Extra Payment" value={formatCurrency(summary.extra_payment)} highlight />
+              <ResultItem label="Months Saved" value={`${summary.months_saved} months`} highlight />
+              <ResultItem label="New Payoff Time" value={`${summary.new_payoff_months} months`} />
+              <ResultItem label="Total Savings" value={formatCurrency(summary.total_savings)} highlight />
+            </div>
+          </div>
+        )
+
+      case 'client_leaves':
+        return (
+          <div className="space-y-4">
+            <div className="p-4 bg-gradient-to-r from-red-900/30 to-pink-900/30 border border-red-700/50 rounded-lg">
+              <p className="text-xs text-gray-400 mb-1">Monthly Runway</p>
+              <p className="text-3xl font-bold text-red-400">
+                {summary.months_of_runway === 'Sustainable' ? '∞' : summary.months_of_runway} 
+                {summary.months_of_runway !== 'Sustainable' && ' months'}
+              </p>
+              <p className="text-sm text-gray-400 mt-2">
+                {summary.recommendation}
+              </p>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <ResultItem label="Income Loss" value={formatCurrency(summary.income_loss)} highlight />
+              <ResultItem label="New Monthly Income" value={formatCurrency(summary.new_monthly_income)} />
+              <ResultItem label="Monthly Expenses" value={formatCurrency(summary.monthly_expenses)} />
+              <ResultItem label="Net Monthly" value={formatCurrency(summary.net_monthly)} highlight />
+              <ResultItem label="Emergency Fund" value={formatCurrency(summary.emergency_fund)} />
+              <ResultItem label="Status" value={summary.status} />
+            </div>
+          </div>
+        )
+
+      case 'buy_equipment':
+        return (
+          <div className="space-y-4">
+            <div className="p-4 bg-gradient-to-r from-blue-900/30 to-cyan-900/30 border border-blue-700/50 rounded-lg">
+              <p className="text-xs text-gray-400 mb-1">Months to Break Even</p>
+              <p className="text-3xl font-bold text-blue-400">
+                {summary.months_to_breakeven === 'Never (no income increase)' ? '∞' : summary.months_to_breakeven}
+              </p>
+              <p className="text-sm text-gray-400 mt-2">
+                {summary.recommendation}
+              </p>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <ResultItem label="Equipment Cost" value={formatCurrency(summary.equipment_cost)} />
+              <ResultItem label="Current Savings" value={formatCurrency(summary.current_savings)} />
+              <ResultItem label="Remaining Savings" value={formatCurrency(summary.remaining_savings)} highlight />
+              <ResultItem label="Income Increase" value={formatCurrency(summary.expected_income_increase) + '/mo'} />
+              <ResultItem label="One Year ROI" value={`${summary.one_year_roi}%`} highlight />
+            </div>
+          </div>
+        )
+
+      case 'rate_increase':
+        return (
+          <div className="space-y-4">
+            <div className="p-4 bg-gradient-to-r from-purple-900/30 to-pink-900/30 border border-purple-700/50 rounded-lg">
+              <p className="text-xs text-gray-400 mb-1">Annual Income Increase</p>
+              <p className="text-3xl font-bold text-purple-400">{formatCurrency(summary.annual_income_increase)}</p>
+              <p className="text-sm text-gray-400 mt-2">
+                {summary.recommendation}
+              </p>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <ResultItem label="Current Rate" value={formatCurrency(summary.current_rate) + '/hr'} />
+              <ResultItem label="New Rate" value={formatCurrency(summary.new_rate) + '/hr'} highlight />
+              <ResultItem label="Rate Increase" value={formatCurrency(summary.rate_increase_amount) + '/hr'} />
+              <ResultItem label="Monthly Increase" value={formatCurrency(summary.monthly_income_increase)} highlight />
+              <ResultItem label="New Monthly Savings" value={formatCurrency(summary.new_monthly_savings)} />
+              <ResultItem label="Savings Boost" value={`${summary.savings_increase_percent}%`} highlight />
+            </div>
           </div>
         )
 

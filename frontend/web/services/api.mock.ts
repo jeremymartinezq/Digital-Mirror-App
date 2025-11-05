@@ -534,6 +534,11 @@ class MockApiService {
       .filter(t => t.amount < 0)
       .reduce((sum, t) => sum + Math.abs(t.amount), 0)
     
+    // Calculate income from transactions
+    const income = mockTransactions
+      .filter(t => t.amount > 0)
+      .reduce((sum, t) => sum + t.amount, 0)
+    
     // Group by category
     const byCategory: any = {}
     mockTransactions
@@ -547,6 +552,8 @@ class MockApiService {
     
     return {
       total_spending: expenses,
+      total_income: income,
+      net: income - expenses,
       breakdown: Object.entries(byCategory).map(([category, amount]) => ({
         category,
         amount

@@ -14,25 +14,18 @@ import {
   SparklesIcon,
   PlusIcon 
 } from '@heroicons/react/24/outline'
-import dynamic from 'next/dynamic'
-
-// Dynamically import recharts components with loading fallback
-const LineChart = dynamic(() => import('recharts').then(mod => mod.LineChart), { 
-  ssr: false,
-  loading: () => <div className="flex items-center justify-center h-[300px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div></div>
-})
-const Line = dynamic(() => import('recharts').then(mod => mod.Line), { ssr: false })
-const Area = dynamic(() => import('recharts').then(mod => mod.Area), { ssr: false })
-const AreaChart = dynamic(() => import('recharts').then(mod => mod.AreaChart), { 
-  ssr: false,
-  loading: () => <div className="flex items-center justify-center h-[300px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div></div>
-})
-const XAxis = dynamic(() => import('recharts').then(mod => mod.XAxis), { ssr: false })
-const YAxis = dynamic(() => import('recharts').then(mod => mod.YAxis), { ssr: false })
-const CartesianGrid = dynamic(() => import('recharts').then(mod => mod.CartesianGrid), { ssr: false })
-const Tooltip = dynamic(() => import('recharts').then(mod => mod.Tooltip), { ssr: false })
-const ResponsiveContainer = dynamic(() => import('recharts').then(mod => mod.ResponsiveContainer), { ssr: false })
-const Legend = dynamic(() => import('recharts').then(mod => mod.Legend), { ssr: false })
+import { 
+  LineChart, 
+  Line, 
+  Area, 
+  AreaChart, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer, 
+  Legend 
+} from 'recharts'
 
 export default function Dashboard() {
   const router = useRouter()
